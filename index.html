@@ -1,9 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Times Tables Practice</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f0f8ff;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    .question {
+      font-size: 24px;
+      margin: 20px 0;
+    }
+    input[type="number"] {
+      font-size: 18px;
+      padding: 5px;
+      width: 100px;
+      text-align: center;
+    }
+    button {
+      font-size: 18px;
+      padding: 10px 20px;
+      margin: 10px;
+    }
+    .feedback {
+      margin-top: 20px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .feedback.correct {
+      color: green;
+    }
+    .feedback.incorrect {
+      color: red;
+    }
+    .progress {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Times Tables Practice</h1>
+  <div class="question"></div>
+  <input type="number" id="answer" placeholder="Your answer" />
+  <button id="submit">Submit</button>
+  <button id="reset">Reset Progress</button>
+  <div class="feedback"></div>
+  <div class="progress"></div>
 
-Here's the corrected section of the code with the missing line added back:
+  <script>
+    const A = 2; // Adjust score bias
+    const B = 2; // Adjust score bias
 
-Corrected Code Snippet:
-javascript
-Copy code
+    const questionDiv = document.querySelector('.question');
+    const answerInput = document.querySelector('#answer');
+    const submitButton = document.querySelector('#submit');
+    const resetButton = document.querySelector('#reset');
+    const feedbackDiv = document.querySelector('.feedback');
+    const progressDiv = document.querySelector('.progress');
+
+    let progress = JSON.parse(localStorage.getItem('progress')) || {};
+    let currentQuestion = {};
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function calculateScore(questionKey) {
+      const stats = progress[questionKey] || { correct: 0, incorrect: 0 };
+      return (stats.correct + A) / (stats.correct + stats.incorrect + A + B);
+    }
+
 function getNextQuestion() {
   const questions = Object.keys(progress);
   const groupedQuestions = {
@@ -40,3 +114,65 @@ function getNextQuestion() {
   currentQuestion = JSON.parse(questionKey);
   questionDiv.textContent = `What is ${currentQuestion.a} × ${currentQuestion.b}?`; // Added back
 }
+
+
+      currentQuestion = JSON.parse(questionKey);
+    }
+
+    function checkAnswer() {
+      const userAnswer = parseInt(answerInput.value, 10);
+      const correctAnswer = currentQuestion.a * currentQuestion.b;
+
+      if (userAnswer === correctAnswer) {
+        feedbackDiv.textContent = `Correct! ${currentQuestion.a} × ${currentQuestion.b} = ${correctAnswer}`;
+        feedbackDiv.className = 'feedback correct';
+        updateProgress(true);
+      } else {
+        feedbackDiv.textContent = `Incorrect! ${currentQuestion.a} × ${currentQuestion.b} = ${correctAnswer}`;
+        feedbackDiv.className = 'feedback incorrect';
+        updateProgress(false);
+      }
+      answerInput.value = '';
+      updateProgressDisplay();
+      getNextQuestion();
+    }
+
+    function updateProgress(isCorrect) {
+      const questionKey = JSON.stringify(currentQuestion);
+      if (!progress[questionKey]) {
+        progress[questionKey] = { correct: 0, incorrect: 0 };
+      }
+      if (isCorrect) {
+        progress[questionKey].correct += 1;
+      } else {
+        progress[questionKey].incorrect += 1;
+      }
+      localStorage.setItem('progress', JSON.stringify(progress));
+    }
+
+    function updateProgressDisplay() {
+      const totalCorrect = Object.values(progress).reduce((sum, q) => sum + q.correct, 0);
+      const totalIncorrect = Object.values(progress).reduce((sum, q) => sum + q.incorrect, 0);
+      progressDiv.textContent = `Progress: ${totalCorrect} correct, ${totalIncorrect} incorrect`;
+    }
+
+    function resetProgress() {
+      if (confirm('Are you sure you want to reset all your progress?')) {
+        progress = {};
+        localStorage.removeItem('progress');
+        updateProgressDisplay();
+      }
+    }
+
+    submitButton.addEventListener('click', checkAnswer);
+    answerInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') checkAnswer();
+    });
+    resetButton.addEventListener('click', resetProgress);
+
+    // Initialize
+    getNextQuestion();
+    updateProgressDisplay();
+  </script>
+</body>
+</html>
