@@ -44,6 +44,23 @@
     .progress {
       margin-top: 20px;
     }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 40px);
+      grid-gap: 2px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .cell {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #000;
+      border: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
@@ -54,10 +71,12 @@
   <button id="reset">Reset Progress</button>
   <div class="feedback"></div>
   <div class="progress"></div>
+  <div class="grid"></div>
 
   <script>
     const A = 2; // Adjust score bias
     const B = 2; // Adjust score bias
+    const MAX_NUMBER = 12; // Maximum number in times tables
 
     const questionDiv = document.querySelector('.question');
     const answerInput = document.querySelector('#answer');
@@ -65,59 +84,56 @@
     const resetButton = document.querySelector('#reset');
     const feedbackDiv = document.querySelector('.feedback');
     const progressDiv = document.querySelector('.progress');
+    const gridDiv = document.querySelector('.grid');
 
-    let progress = JSON.parse(localStorage.getItem('progress')) || {};
+    let progress = JSON.parse(localStorage.getItem('progress')) || initializeProgress();
     let currentQuestion = {};
+
+    function initializeProgress() {
+      const initialProgress = {};
+      for (let a = 1; a <= MAX_NUMBER; a++) {
+        for (let b = 1; b <= MAX_NUMBER; b++) {
+          const key = JSON.stringify({ a, b });
+          initialProgress[key] = { correct: 0, incorrect: 0 };
+        }
+      }
+      return initialProgress;
+    }
 
     function getRandomInt(min, max) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
     function calculateScore(questionKey) {
-      const stats = progress[questionKey] || { correct: 0, incorrect: 0 };
+      const stats = progress[questionKey];
       return (stats.correct + A) / (stats.correct + stats.incorrect + A + B);
     }
 
+
 function getNextQuestion() {
   const questions = Object.keys(progress);
-  const groupedQuestions = {
-    low: [],
-    mid: [],
-    high: [],
-    mastered: []
-  };
-
-  for (const key of questions) {
+  const weights = questions.map(key => {
     const score = calculateScore(key);
-    if (score < 0.5) groupedQuestions.low.push(key);
-    else if (score < 0.75) groupedQuestions.mid.push(key);
-    else if (score < 0.9) groupedQuestions.high.push(key);
-    else groupedQuestions.mastered.push(key);
-  }
+    return Math.pow(1 - score, 3); // Weight proportional to (1 - score)^3
+  });
 
-  let questionKey;
-  if (groupedQuestions.low.length > 0) {
-    questionKey = groupedQuestions.low[getRandomInt(0, groupedQuestions.low.length - 1)];
-  } else if (groupedQuestions.mid.length > 0) {
-    questionKey = groupedQuestions.mid[getRandomInt(0, groupedQuestions.mid.length - 1)];
-  } else if (groupedQuestions.high.length > 0) {
-    questionKey = groupedQuestions.high[getRandomInt(0, groupedQuestions.high.length - 1)];
-  } else {
-    currentQuestion = {
-      a: getRandomInt(1, 12),
-      b: getRandomInt(1, 12),
-    };
-    questionDiv.textContent = `What is ${currentQuestion.a} × ${currentQuestion.b}?`; // Added back
-    return;
-  }
+  // Calculate the total weight
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
 
-  currentQuestion = JSON.parse(questionKey);
-  questionDiv.textContent = `What is ${currentQuestion.a} × ${currentQuestion.b}?`; // Added back
-}
+  // Pick a random number within the range of total weights
+  const randomWeight = Math.random() * totalWeight;
 
-
-      currentQuestion = JSON.parse(questionKey);
+  // Find the question corresponding to the random weight
+  let cumulativeWeight = 0;
+  for (let i = 0; i < questions.length; i++) {
+    cumulativeWeight += weights[i];
+    if (randomWeight <= cumulativeWeight) {
+      currentQuestion = JSON.parse(questions[i]);
+      questionDiv.textContent = `What is ${currentQuestion.a} × ${currentQuestion.b}?`;
+      return;
     }
+  }
+}
 
     function checkAnswer() {
       const userAnswer = parseInt(answerInput.value, 10);
@@ -135,13 +151,11 @@ function getNextQuestion() {
       answerInput.value = '';
       updateProgressDisplay();
       getNextQuestion();
+      renderGrid();
     }
 
     function updateProgress(isCorrect) {
       const questionKey = JSON.stringify(currentQuestion);
-      if (!progress[questionKey]) {
-        progress[questionKey] = { correct: 0, incorrect: 0 };
-      }
       if (isCorrect) {
         progress[questionKey].correct += 1;
       } else {
@@ -158,11 +172,73 @@ function getNextQuestion() {
 
     function resetProgress() {
       if (confirm('Are you sure you want to reset all your progress?')) {
-        progress = {};
-        localStorage.removeItem('progress');
+        progress = initializeProgress();
+        localStorage.setItem('progress', JSON.stringify(progress));
         updateProgressDisplay();
+        renderGrid();
       }
     }
+
+    function renderGrid() {
+      gridDiv.innerHTML = '';
+      for (let a = 1; a <= MAX_NUMBER; a++) {
+        for (let b = 1; b <= MAX_NUMBER; b++) {
+          const key = JSON.stringify({ a, b });
+          const score = calculateScore(key);
+          const color = getColor(score);
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.style.backgroundColor = color;
+          cell.textContent = `${a}×${b}`;
+          gridDiv.appendChild(cell);
+        }
+      }
+    }
+
+function getColor(score) {
+  // Convert the score (0 to 1) to a hue value in HSV
+  // Hue: Red (0) -> White (0.5) -> Green (120)
+  const hue = score < 0.5 ? 0 : 120; // Red for scores < 0.5, Green for scores > 0.5
+  const saturation = Math.abs(score - 0.5) * 2; // Full saturation at 0 or 1, none at 0.5
+  const value = 1; // Always full brightness
+
+  // Convert HSV to RGB
+  return hsvToRgb(hue, saturation, value);
+}
+
+function hsvToRgb(h, s, v) {
+  let r, g, b;
+
+  const i = Math.floor(h / 60) % 6;
+  const f = h / 60 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+
+  switch (i) {
+    case 0:
+      r = v, g = t, b = p;
+      break;
+    case 1:
+      r = q, g = v, b = p;
+      break;
+    case 2:
+      r = p, g = v, b = t;
+      break;
+    case 3:
+      r = p, g = q, b = v;
+      break;
+    case 4:
+      r = t, g = p, b = v;
+      break;
+    case 5:
+      r = v, g = p, b = q;
+      break;
+  }
+
+  // Scale RGB to 0-255
+  return `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`;
+}
 
     submitButton.addEventListener('click', checkAnswer);
     answerInput.addEventListener('keydown', (e) => {
@@ -171,8 +247,9 @@ function getNextQuestion() {
     resetButton.addEventListener('click', resetProgress);
 
     // Initialize
-    getNextQuestion();
     updateProgressDisplay();
+    renderGrid();
+    getNextQuestion();
   </script>
 </body>
 </html>
