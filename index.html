@@ -56,6 +56,9 @@
   <div class="progress"></div>
 
   <script>
+    const A = 2; // Adjust score bias
+    const B = 2; // Adjust score bias
+
     const questionDiv = document.querySelector('.question');
     const answerInput = document.querySelector('#answer');
     const submitButton = document.querySelector('#submit');
@@ -70,17 +73,44 @@
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
+    function calculateScore(questionKey) {
+      const stats = progress[questionKey] || { correct: 0, incorrect: 0 };
+      return (stats.correct + A) / (stats.correct + stats.incorrect + A + B);
+    }
+
     function getNextQuestion() {
-      const wrongQuestions = Object.keys(progress).filter(key => progress[key].incorrect > 0);
-      if (wrongQuestions.length > 0 && Math.random() < 0.7) {
-        currentQuestion = JSON.parse(wrongQuestions[getRandomInt(0, wrongQuestions.length - 1)]);
+      const questions = Object.keys(progress);
+      const groupedQuestions = {
+        low: [],
+        mid: [],
+        high: [],
+        mastered: []
+      };
+
+      for (const key of questions) {
+        const score = calculateScore(key);
+        if (score < 0.5) groupedQuestions.low.push(key);
+        else if (score < 0.75) groupedQuestions.mid.push(key);
+        else if (score < 0.9) groupedQuestions.high.push(key);
+        else groupedQuestions.mastered.push(key);
+      }
+
+      let questionKey;
+      if (groupedQuestions.low.length > 0) {
+        questionKey = groupedQuestions.low[getRandomInt(0, groupedQuestions.low.length - 1)];
+      } else if (groupedQuestions.mid.length > 0) {
+        questionKey = groupedQuestions.mid[getRandomInt(0, groupedQuestions.mid.length - 1)];
+      } else if (groupedQuestions.high.length > 0) {
+        questionKey = groupedQuestions.high[getRandomInt(0, groupedQuestions.high.length - 1)];
       } else {
         currentQuestion = {
           a: getRandomInt(1, 12),
           b: getRandomInt(1, 12),
         };
+        return;
       }
-      questionDiv.textContent = `What is ${currentQuestion.a} × ${currentQuestion.b}?`;
+
+      currentQuestion = JSON.parse(questionKey);
     }
 
     function checkAnswer() {
