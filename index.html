@@ -74,8 +74,8 @@
   <div class="grid"></div>
 
   <script>
-    const A = 2; // Adjust score bias
-    const B = 2; // Adjust score bias
+    const A = 1; // Adjust score bias
+    const B = 1; // Adjust score bias
     const MAX_NUMBER = 12; // Maximum number in times tables
 
     const questionDiv = document.querySelector('.question');
@@ -114,9 +114,11 @@ function getNextQuestion() {
   const questions = Object.keys(progress);
   const weights = questions.map(key => {
     const score = calculateScore(key);
-    return Math.pow(1 - score, 3); // Weight proportional to (1 - score)^3
+    const stats = progress[key];
+    const usedBefore = stats.correct + stats.incorrect > 0;
+    return usedBefore ? Math.pow(2*(1 - score), 5) : 0.05;
   });
-
+console.log(weights);
   // Calculate the total weight
   const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
 
@@ -149,7 +151,7 @@ function getNextQuestion() {
         updateProgress(false);
       }
       answerInput.value = '';
-      updateProgressDisplay();
+      //updateProgressDisplay();
       getNextQuestion();
       renderGrid();
     }
@@ -174,7 +176,7 @@ function getNextQuestion() {
       if (confirm('Are you sure you want to reset all your progress?')) {
         progress = initializeProgress();
         localStorage.setItem('progress', JSON.stringify(progress));
-        updateProgressDisplay();
+        //updateProgressDisplay();
         renderGrid();
       }
     }
@@ -247,7 +249,7 @@ function hsvToRgb(h, s, v) {
     resetButton.addEventListener('click', resetProgress);
 
     // Initialize
-    updateProgressDisplay();
+    //updateProgressDisplay();
     renderGrid();
     getNextQuestion();
   </script>
