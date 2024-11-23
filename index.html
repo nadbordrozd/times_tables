@@ -32,7 +32,14 @@
     }
     .feedback {
       margin-top: 20px;
-      font-size: 20px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .feedback.correct {
+      color: green;
+    }
+    .feedback.incorrect {
+      color: red;
     }
     .progress {
       margin-top: 20px;
@@ -44,6 +51,7 @@
   <div class="question"></div>
   <input type="number" id="answer" placeholder="Your answer" />
   <button id="submit">Submit</button>
+  <button id="reset">Reset Progress</button>
   <div class="feedback"></div>
   <div class="progress"></div>
 
@@ -51,6 +59,7 @@
     const questionDiv = document.querySelector('.question');
     const answerInput = document.querySelector('#answer');
     const submitButton = document.querySelector('#submit');
+    const resetButton = document.querySelector('#reset');
     const feedbackDiv = document.querySelector('.feedback');
     const progressDiv = document.querySelector('.progress');
 
@@ -62,14 +71,13 @@
     }
 
     function getNextQuestion() {
-      // Prioritize questions the user got wrong
-      const wrongQuestions = Object.keys(progress).filter(key => progress[key] < 0);
+      const wrongQuestions = Object.keys(progress).filter(key => progress[key].incorrect > 0);
       if (wrongQuestions.length > 0 && Math.random() < 0.7) {
         currentQuestion = JSON.parse(wrongQuestions[getRandomInt(0, wrongQuestions.length - 1)]);
       } else {
         currentQuestion = {
-          a: getRandomInt(1, 10),
-          b: getRandomInt(1, 10),
+          a: getRandomInt(1, 12),
+          b: getRandomInt(1, 12),
         };
       }
       questionDiv.textContent = `What is ${currentQuestion.a} × ${currentQuestion.b}?`;
@@ -80,33 +88,51 @@
       const correctAnswer = currentQuestion.a * currentQuestion.b;
 
       if (userAnswer === correctAnswer) {
-        feedbackDiv.textContent = 'Correct!';
-        updateProgress(1);
+        feedbackDiv.textContent = `Correct! ${currentQuestion.a} × ${currentQuestion.b} = ${correctAnswer}`;
+        feedbackDiv.className = 'feedback correct';
+        updateProgress(true);
       } else {
-        feedbackDiv.textContent = `Incorrect! The correct answer was ${correctAnswer}.`;
-        updateProgress(-1);
+        feedbackDiv.textContent = `Incorrect! ${currentQuestion.a} × ${currentQuestion.b} = ${correctAnswer}`;
+        feedbackDiv.className = 'feedback incorrect';
+        updateProgress(false);
       }
       answerInput.value = '';
       updateProgressDisplay();
       getNextQuestion();
     }
 
-    function updateProgress(change) {
+    function updateProgress(isCorrect) {
       const questionKey = JSON.stringify(currentQuestion);
-      progress[questionKey] = (progress[questionKey] || 0) + change;
+      if (!progress[questionKey]) {
+        progress[questionKey] = { correct: 0, incorrect: 0 };
+      }
+      if (isCorrect) {
+        progress[questionKey].correct += 1;
+      } else {
+        progress[questionKey].incorrect += 1;
+      }
       localStorage.setItem('progress', JSON.stringify(progress));
     }
 
     function updateProgressDisplay() {
-      const correctCount = Object.values(progress).filter(val => val > 0).length;
-      const totalCount = Object.keys(progress).length;
-      progressDiv.textContent = `Progress: ${correctCount}/${totalCount} mastered`;
+      const totalCorrect = Object.values(progress).reduce((sum, q) => sum + q.correct, 0);
+      const totalIncorrect = Object.values(progress).reduce((sum, q) => sum + q.incorrect, 0);
+      progressDiv.textContent = `Progress: ${totalCorrect} correct, ${totalIncorrect} incorrect`;
+    }
+
+    function resetProgress() {
+      if (confirm('Are you sure you want to reset all your progress?')) {
+        progress = {};
+        localStorage.removeItem('progress');
+        updateProgressDisplay();
+      }
     }
 
     submitButton.addEventListener('click', checkAnswer);
     answerInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') checkAnswer();
     });
+    resetButton.addEventListener('click', resetProgress);
 
     // Initialize
     getNextQuestion();
