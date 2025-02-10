@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -94,184 +95,189 @@
   <div class="grid"></div>
 
   <script>
-    const A = 1; // Adjust score bias
-    const B = 1; // Adjust score bias
-    const MAX_NUMBER = 12; // Maximum number in times tables
 
-    const questionDiv = document.querySelector('.question');
-    const answerInput = document.querySelector('#answer');
-    const submitButton = document.querySelector('#submit');
-    const resetButton = document.querySelector('#reset');
-    const feedbackDiv = document.querySelector('.feedback');
-    const progressDiv = document.querySelector('.progress');
-    const gridDiv = document.querySelector('.grid');
 
-    let progress = JSON.parse(localStorage.getItem('progress')) || initializeProgress();
-    let currentQuestion = {};
 
-    function initializeProgress() {
-      const initialProgress = {};
-      for (let a = 1; a <= MAX_NUMBER; a++) {
-        for (let b = 1; b <= MAX_NUMBER; b++) {
-          const key = JSON.stringify({ a, b });
-          initialProgress[key] = { correct: 0, incorrect: 0 };
-        }
-      }
-      return initialProgress;
+const A = 1; // Adjust score bias
+const B = 1; // Adjust score bias
+const MAX_NUMBER = 12; // Maximum number in times tables
+const HISTORY_SIZE = 4; // Number of past responses to remember
+const MASTERY_THRESHOLD = 0.5; // Mastery threshold
+const RECENCY_WEIGHT = 4; // The most recent answer is R times more important than the oldest
+
+const questionDiv = document.querySelector('.question');
+const answerInput = document.querySelector('#answer');
+
+const submitButton = document.querySelector('#submit');
+const resetButton = document.querySelector('#reset');
+const feedbackDiv = document.querySelector('.feedback');
+const gridDiv = document.querySelector('.grid');
+
+let unlockedBatches = JSON.parse(localStorage.getItem('unlockedBatches')) || [1];
+let progress = JSON.parse(localStorage.getItem('progress')) || initializeProgress();
+let currentQuestion = {};
+
+const batches = [
+  [1, 2],
+  [5, 10],
+  [3, 4],
+  [6, 9],
+  [8, 7],
+  [11, 12]
+];
+
+function initializeProgress() {
+  const initialProgress = {};
+  for (let a = 1; a <= MAX_NUMBER; a++) {
+    for (let b = 1; b <= MAX_NUMBER; b++) {
+      const key = JSON.stringify({ a, b });
+      initialProgress[key] = Array(HISTORY_SIZE).fill(0); // Start with all incorrect
     }
+  }
+  return initialProgress;
+}
 
-    function getRandomInt(min, max) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
+function calculateScore(questionKey) {
+  const history = progress[questionKey] || [];
+  if (history.length === 0) return 0; // Default to 0 mastery if no attempts
+  
+  const baseWeight = 1;
+  const step = (RECENCY_WEIGHT - baseWeight) / (HISTORY_SIZE - 1);
+  const weights = history.map((_, index) => baseWeight + index * step);
+  const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
+  
+  return history.reduce((sum, val, index) => sum + val * weights[index], 0) / weightSum; // Weighted average
+}
 
-    function calculateScore(questionKey) {
-      const stats = progress[questionKey];
-      return (stats.correct + A) / (stats.correct + stats.incorrect + A + B);
-    }
+function updateProgress(questionKey, isCorrect) {
+  if (!progress[questionKey]) {
+    progress[questionKey] = Array(HISTORY_SIZE).fill(0);
+  }
+  
+  progress[questionKey].push(isCorrect ? 1 : 0);
+  if (progress[questionKey].length > HISTORY_SIZE) {
+    progress[questionKey].shift(); // Keep only last N entries
+  }
+  
+  localStorage.setItem('progress', JSON.stringify(progress));
+  checkMastery(); // Check if the next batch should be unlocked
+}
 
+function checkMastery() {
+  const currentBatch = batches[unlockedBatches.length - 1];
+  const allMastered = currentBatch.every(num => {
+    return [...Array(MAX_NUMBER).keys()].slice(1).every(other => {
+      const key1 = JSON.stringify({ a: num, b: other });
+      const key2 = JSON.stringify({ a: other, b: num });
+      return calculateScore(key1) >= MASTERY_THRESHOLD && calculateScore(key2) >= MASTERY_THRESHOLD;
+    });
+  });
+  
+  if (allMastered && unlockedBatches.length < batches.length) {
+    unlockedBatches.push(unlockedBatches.length + 1);
+    localStorage.setItem('unlockedBatches', JSON.stringify(unlockedBatches));
+  }
+}
+
+function resetProgress() {
+  progress = initializeProgress();
+  unlockedBatches = [1];
+  localStorage.setItem('progress', JSON.stringify(progress));
+  localStorage.setItem('unlockedBatches', JSON.stringify(unlockedBatches));
+  renderGrid();
+}
 
 function getNextQuestion() {
-  const questions = Object.keys(progress);
+  const allowedNumbers = new Set();
+  unlockedBatches.forEach(batchIndex => {
+    batches[batchIndex - 1].forEach(num => allowedNumbers.add(num));
+  });
+  
+  const questions = Object.keys(progress).filter(key => {
+    const q = JSON.parse(key);
+    return allowedNumbers.has(q.a) || allowedNumbers.has(q.b);
+  });
+  
   const weights = questions.map(key => {
     const score = calculateScore(key);
-    const stats = progress[key];
-    const usedBefore = stats.correct + stats.incorrect > 0;
-    return usedBefore ? Math.pow(2*(1 - score), 5) : 0.05;
+    return Math.pow(2 * (1.1 - score), 5); // Prioritize lower scores
   });
-console.log(weights);
-  // Calculate the total weight
+  
   const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-
-  // Pick a random number within the range of total weights
-  const randomWeight = Math.random() * totalWeight;
-
-  // Find the question corresponding to the random weight
+  let randomWeight = Math.random() * totalWeight;
   let cumulativeWeight = 0;
+  let selectedQuestion = null;
+
   for (let i = 0; i < questions.length; i++) {
     cumulativeWeight += weights[i];
     if (randomWeight <= cumulativeWeight) {
-      currentQuestion = JSON.parse(questions[i]);
-      questionDiv.textContent = `What is ${currentQuestion.a} × ${currentQuestion.b}?`;
-      return;
+      selectedQuestion = questions[i];
+      break;
     }
   }
+
+  if (!selectedQuestion) {
+    selectedQuestion = questions[Math.floor(Math.random() * questions.length)]; // Randomize if stuck
+  }
+
+  currentQuestion = JSON.parse(selectedQuestion);
+  questionDiv.textContent = `What is ${currentQuestion.a} × ${currentQuestion.b}?`;
 }
 
-    function checkAnswer() {
-      const userAnswer = parseInt(answerInput.value, 10);
-      const correctAnswer = currentQuestion.a * currentQuestion.b;
-
-      if (userAnswer === correctAnswer) {
-        feedbackDiv.textContent = `Correct! ${currentQuestion.a} × ${currentQuestion.b} = ${correctAnswer}`;
-        feedbackDiv.className = 'feedback correct';
-        updateProgress(true);
-      } else {
-        feedbackDiv.textContent = `Incorrect! ${currentQuestion.a} × ${currentQuestion.b} = ${correctAnswer}`;
-        feedbackDiv.className = 'feedback incorrect';
-        updateProgress(false);
-      }
-      answerInput.value = '';
-      //updateProgressDisplay();
-      getNextQuestion();
-      renderGrid();
-    }
-
-    function updateProgress(isCorrect) {
-      const questionKey = JSON.stringify(currentQuestion);
-      if (isCorrect) {
-        progress[questionKey].correct += 1;
-      } else {
-        progress[questionKey].incorrect += 1;
-      }
-      localStorage.setItem('progress', JSON.stringify(progress));
-    }
-
-    function updateProgressDisplay() {
-      const totalCorrect = Object.values(progress).reduce((sum, q) => sum + q.correct, 0);
-      const totalIncorrect = Object.values(progress).reduce((sum, q) => sum + q.incorrect, 0);
-      progressDiv.textContent = `Progress: ${totalCorrect} correct, ${totalIncorrect} incorrect`;
-    }
-
-    function resetProgress() {
-      if (confirm('Are you sure you want to reset all your progress?')) {
-        progress = initializeProgress();
-        localStorage.setItem('progress', JSON.stringify(progress));
-        //updateProgressDisplay();
-        renderGrid();
-      }
-    }
-
-    function renderGrid() {
-      gridDiv.innerHTML = '';
-      for (let a = 1; a <= MAX_NUMBER; a++) {
-        for (let b = 1; b <= MAX_NUMBER; b++) {
-          const key = JSON.stringify({ a, b });
-          const score = calculateScore(key);
-          const color = getColor(score);
-          const cell = document.createElement('div');
-          cell.className = 'cell';
-          cell.style.backgroundColor = color;
-          cell.textContent = `${a}×${b}`;
-          gridDiv.appendChild(cell);
-        }
-      }
-    }
-
-function getColor(score) {
-  // Convert the score (0 to 1) to a hue value in HSV
-  // Hue: Red (0) -> White (0.5) -> Green (120)
-  const hue = score < 0.5 ? 0 : 120; // Red for scores < 0.5, Green for scores > 0.5
-  const saturation = Math.abs(score - 0.5) * 2; // Full saturation at 0 or 1, none at 0.5
-  const value = 1; // Always full brightness
-
-  // Convert HSV to RGB
-  return hsvToRgb(hue, saturation, value);
+function checkAnswer() {
+  const userAnswer = parseInt(answerInput.value, 10);
+  const correctAnswer = currentQuestion.a * currentQuestion.b;
+  const questionKey = JSON.stringify(currentQuestion);
+  
+  if (userAnswer === correctAnswer) {
+    feedbackDiv.textContent = `Correct! ${currentQuestion.a} × ${currentQuestion.b} = ${correctAnswer}`;
+    feedbackDiv.className = 'feedback correct';
+    updateProgress(questionKey, true);
+  } else {
+    feedbackDiv.textContent = `Incorrect! ${currentQuestion.a} × ${currentQuestion.b} = ${correctAnswer}`;
+    feedbackDiv.className = 'feedback incorrect';
+    updateProgress(questionKey, false);
+  }
+  
+  answerInput.value = '';
+  getNextQuestion();
+  renderGrid();
 }
 
 function hsvToRgb(h, s, v) {
-  let r, g, b;
-
-  const i = Math.floor(h / 60) % 6;
-  const f = h / 60 - i;
-  const p = v * (1 - s);
-  const q = v * (1 - f * s);
-  const t = v * (1 - (1 - f) * s);
-
-  switch (i) {
-    case 0:
-      r = v, g = t, b = p;
-      break;
-    case 1:
-      r = q, g = v, b = p;
-      break;
-    case 2:
-      r = p, g = v, b = t;
-      break;
-    case 3:
-      r = p, g = q, b = v;
-      break;
-    case 4:
-      r = t, g = p, b = v;
-      break;
-    case 5:
-      r = v, g = p, b = q;
-      break;
-  }
-
-  // Scale RGB to 0-255
-  return `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`;
+  let f = (n, k = (n + h / 60) % 6) => v - v * s * Math.max(Math.min(k, 4 - k, 1), 0);
+  return `rgb(${Math.round(f(5) * 255)}, ${Math.round(f(3) * 255)}, ${Math.round(f(1) * 255)})`;
 }
 
-    submitButton.addEventListener('click', checkAnswer);
-    answerInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') checkAnswer();
-    });
-    resetButton.addEventListener('click', resetProgress);
+function renderGrid() {
+  gridDiv.innerHTML = '';
+  for (let a = 1; a <= MAX_NUMBER; a++) {
+    for (let b = 1; b <= MAX_NUMBER; b++) {
+      const key = JSON.stringify({ a, b });
+      const score = calculateScore(key);
+      const isUnlocked = batches.slice(0, unlockedBatches.length).some(batch => batch.includes(a) || batch.includes(b));
+      const hue = score * 120; // Red (0) to Green (120)
+      const color = isUnlocked ? hsvToRgb(hue, 1, 1) : 'rgb(200, 200, 200)';
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.style.backgroundColor = color;
+      cell.textContent = `${a}×${b}`;
+      gridDiv.appendChild(cell);
+    }
+  }
+}
+submitButton.addEventListener('click', checkAnswer);
+answerInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') checkAnswer();
+});
+resetButton.addEventListener('click', resetProgress);
 
-    // Initialize
-    //updateProgressDisplay();
-    renderGrid();
-    getNextQuestion();
+renderGrid();
+getNextQuestion();
+
+
+
+
   </script>
 </body>
 </html>
