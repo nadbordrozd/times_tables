@@ -1,283 +1,746 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Times Tables Practice</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background-color: #f0f8ff;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      color: #333;
-    }
-    .question {
-      font-size: 24px;
-      margin: 20px 0;
-    }
-    input[type="number"] {
-      font-size: 18px;
-      padding: 5px;
-      width: 100px;
-      text-align: center;
-    }
-    button {
-      font-size: 18px;
-      padding: 10px 20px;
-      margin: 10px;
-    }
-    .feedback {
-      margin-top: 20px;
-      font-size: 24px;
-      font-weight: bold;
-    }
-    .feedback.correct {
-      color: green;
-    }
-    .feedback.incorrect {
-      color: red;
-    }
-    .progress {
-      margin-top: 20px;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(12, 40px);
-      grid-gap: 2px;
-      justify-content: center;
-      margin-top: 20px;
-    }
-    .cell {
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      color: #000;
-      border: 1px solid #ccc;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Times Tables Master</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-@media (max-width: 600px) {
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(12, 29px);
-      grid-gap: 1px;
-      justify-content: center;
-      margin-top: 20px;
-    }
-    .cell {
-      width: 29px;
-      height: 29px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 9px;
-      color: #000;
-      border: 1px solid #ccc;
-    }
-}
-  </style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .game-area {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .question-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .question {
+            font-size: 3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .timer-container {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .timer-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 100%;
+            transition: width 0.1s linear, background 0.3s;
+            border-radius: 10px;
+        }
+
+        .timer-bar.urgent {
+            background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .status-message {
+            font-size: 1.2em;
+            min-height: 30px;
+            margin-bottom: 20px;
+        }
+
+        .status-message.correct {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .status-message.incorrect {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .answers-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .answer-btn {
+            padding: 30px;
+            font-size: 2em;
+            font-weight: bold;
+            border: 3px solid #ddd;
+            border-radius: 10px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .answer-btn:hover:not(:disabled) {
+            background: #e9ecef;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .answer-btn:disabled {
+            cursor: not-allowed;
+        }
+
+        .answer-btn.correct {
+            background: #27ae60;
+            color: white;
+            border-color: #27ae60;
+        }
+
+        .answer-btn.incorrect {
+            background: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+
+        .mode-toggle {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            color: white;
+            font-weight: 500;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #667eea;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .next-btn {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .next-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .reset-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1em;
+            font-weight: bold;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 15px;
+        }
+
+        .reset-btn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .progress-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .progress-title {
+            text-align: center;
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .progress-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1px;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        .progress-cell {
+            aspect-ratio: 1;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #333;
+            border-radius: 3px;
+            transition: all 0.3s;
+        }
+
+        .progress-cell:hover {
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .progress-cell.locked {
+            background-color: #e0e0e0 !important;
+            color: #999;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 768px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .answers-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .question {
+                font-size: 2em;
+            }
+
+            .answer-btn {
+                padding: 20px;
+                font-size: 1.5em;
+            }
+
+            .progress-cell {
+                font-size: 0.7em;
+            }
+        }
+    </style>
 </head>
 <body>
-  <!-- <h1>Times Tables Practice</h1> -->
-  <div class="question"></div>
-  <input type="number" id="answer" placeholder="Your answer" />
-  <button id="submit">Submit</button>
-  <button id="reset">Reset Progress</button>
-  <div class="feedback"></div>
-  <div class="progress"></div>
-  <div class="grid"></div>
+    <div class="container">
+        <h1>Times Tables Master</h1>
 
-  <script>
+        <div class="mode-toggle">
+            <span>Regular Mode</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="modeToggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+            <span>Tiered Mode</span>
+        </div>
 
+        <div class="content-wrapper">
+            <div class="game-area">
+                <div class="question-section">
+                    <div class="timer-container">
+                        <div class="timer-bar" id="timerBar"></div>
+                    </div>
+                    <div class="question" id="question">Click "Next Question" to start!</div>
+                    <div class="status-message" id="status"></div>
+                </div>
 
+                <div class="answers-grid" id="answers"></div>
 
-const A = 1; // Adjust score bias
-const B = 1; // Adjust score bias
-const MAX_NUMBER = 12; // Maximum number in times tables
-const HISTORY_SIZE = 4; // Number of past responses to remember
-const MASTERY_THRESHOLD = 0.5; // Mastery threshold
-const RECENCY_WEIGHT = 4; // The most recent answer is R times more important than the oldest
+                <button class="next-btn" id="nextBtn">Next Question</button>
+            </div>
 
-const questionDiv = document.querySelector('.question');
-const answerInput = document.querySelector('#answer');
+            <div class="progress-section">
+                <div class="progress-title">Your Progress (12×12 Times Tables)</div>
+                <div class="progress-grid" id="progressGrid"></div>
+                <button class="reset-btn" id="resetBtn">Reset All Progress</button>
+            </div>
+        </div>
+    </div>
 
-const submitButton = document.querySelector('#submit');
-const resetButton = document.querySelector('#reset');
-const feedbackDiv = document.querySelector('.feedback');
-const gridDiv = document.querySelector('.grid');
+    <script>
+        // Normalize key so a*b and b*a share the same mastery
+        function getMasteryKey(a, b) {
+            // Always put smaller number first
+            return a <= b ? `${a}x${b}` : `${b}x${a}`;
+        }
 
-let unlockedBatches = JSON.parse(localStorage.getItem('unlockedBatches')) || [1];
-let progress = JSON.parse(localStorage.getItem('progress')) || initializeProgress();
-let currentQuestion = {};
+        // Local storage functions
+        function saveProgress() {
+            localStorage.setItem('timesTablesMastery', JSON.stringify(mastery));
+            localStorage.setItem('timesTablesTieredMode', JSON.stringify(tieredMode));
+        }
 
-const batches = [
-  [1, 2],
-  [5, 10],
-  [3, 4],
-  [6, 9],
-  [8, 7],
-  [11, 12]
-];
+        function loadProgress() {
+            const savedMastery = localStorage.getItem('timesTablesMastery');
+            const savedMode = localStorage.getItem('timesTablesTieredMode');
 
-function initializeProgress() {
-  const initialProgress = {};
-  for (let a = 1; a <= MAX_NUMBER; a++) {
-    for (let b = 1; b <= MAX_NUMBER; b++) {
-      const key = JSON.stringify({ a, b });
-      initialProgress[key] = Array(HISTORY_SIZE).fill(0); // Start with all incorrect
-    }
-  }
-  return initialProgress;
-}
+            if (savedMastery) {
+                const loaded = JSON.parse(savedMastery);
+                Object.assign(mastery, loaded);
+            }
 
-function calculateScore(questionKey) {
-  const history = progress[questionKey] || [];
-  if (history.length === 0) return 0; // Default to 0 mastery if no attempts
-  
-  const baseWeight = 1;
-  const step = (RECENCY_WEIGHT - baseWeight) / (HISTORY_SIZE - 1);
-  const weights = history.map((_, index) => baseWeight + index * step);
-  const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
-  
-  return history.reduce((sum, val, index) => sum + val * weights[index], 0) / weightSum; // Weighted average
-}
+            if (savedMode !== null) {
+                tieredMode = JSON.parse(savedMode);
+                modeToggle.checked = tieredMode;
+            }
+        }
 
-function updateProgress(questionKey, isCorrect) {
-  if (!progress[questionKey]) {
-    progress[questionKey] = Array(HISTORY_SIZE).fill(0);
-  }
-  
-  progress[questionKey].push(isCorrect ? 1 : 0);
-  if (progress[questionKey].length > HISTORY_SIZE) {
-    progress[questionKey].shift(); // Keep only last N entries
-  }
-  
-  localStorage.setItem('progress', JSON.stringify(progress));
-  checkMastery(); // Check if the next batch should be unlocked
-}
+        function resetProgress() {
+            const confirmed = confirm('Are you sure you want to reset all progress? This cannot be undone.');
 
-function checkMastery() {
-  const currentBatch = batches[unlockedBatches.length - 1];
-  const allMastered = currentBatch.every(num => {
-    return [...Array(MAX_NUMBER).keys()].slice(1).every(other => {
-      const key1 = JSON.stringify({ a: num, b: other });
-      const key2 = JSON.stringify({ a: other, b: num });
-      return calculateScore(key1) >= MASTERY_THRESHOLD && calculateScore(key2) >= MASTERY_THRESHOLD;
-    });
-  });
-  
-  if (allMastered && unlockedBatches.length < batches.length) {
-    unlockedBatches.push(unlockedBatches.length + 1);
-    localStorage.setItem('unlockedBatches', JSON.stringify(unlockedBatches));
-  }
-}
+            if (confirmed) {
+                // Reset all mastery levels to 0
+                for (let key in mastery) {
+                    mastery[key] = 0;
+                }
 
-function resetProgress() {
-  progress = initializeProgress();
-  unlockedBatches = [1];
-  localStorage.setItem('progress', JSON.stringify(progress));
-  localStorage.setItem('unlockedBatches', JSON.stringify(unlockedBatches));
-  renderGrid();
-}
+                // Clear localStorage
+                localStorage.removeItem('timesTablesMastery');
+                localStorage.removeItem('timesTablesTieredMode');
 
-function getNextQuestion() {
-  const allowedNumbers = new Set();
-  unlockedBatches.forEach(batchIndex => {
-    batches[batchIndex - 1].forEach(num => allowedNumbers.add(num));
-  });
-  
-  const questions = Object.keys(progress).filter(key => {
-    const q = JSON.parse(key);
-    return allowedNumbers.has(q.a) || allowedNumbers.has(q.b);
-  });
-  
-  const weights = questions.map(key => {
-    const score = calculateScore(key);
-    return Math.pow(2 * (1.1 - score), 5); // Prioritize lower scores
-  });
-  
-  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-  let randomWeight = Math.random() * totalWeight;
-  let cumulativeWeight = 0;
-  let selectedQuestion = null;
+                // Update the display
+                updateProgressGrid();
 
-  for (let i = 0; i < questions.length; i++) {
-    cumulativeWeight += weights[i];
-    if (randomWeight <= cumulativeWeight) {
-      selectedQuestion = questions[i];
-      break;
-    }
-  }
+                // Reset status message
+                statusEl.textContent = '';
+                statusEl.className = 'status-message';
+                questionEl.textContent = 'Click "Next Question" to start!';
+                answersEl.innerHTML = '';
+            }
+        }
 
-  if (!selectedQuestion) {
-    selectedQuestion = questions[Math.floor(Math.random() * questions.length)]; // Randomize if stuck
-  }
+        // Initialize mastery tracking for all unique questions
+        const mastery = {};
+        for (let i = 1; i <= 12; i++) {
+            for (let j = i; j <= 12; j++) {
+                mastery[getMasteryKey(i, j)] = 0;
+            }
+        }
 
-  currentQuestion = JSON.parse(selectedQuestion);
-  questionDiv.textContent = `What is ${currentQuestion.a} × ${currentQuestion.b}?`;
-}
+        // Tiered mode configuration
+        const tiers = [
+            [1, 2, 10],    // Tier 1
+            [5, 4],        // Tier 2
+            [3, 6],        // Tier 3
+            [9, 8],        // Tier 4
+            [7, 11, 12]    // Tier 5
+        ];
 
-function checkAnswer() {
-  const userAnswer = parseInt(answerInput.value, 10);
-  const correctAnswer = currentQuestion.a * currentQuestion.b;
-  const questionKey = JSON.stringify(currentQuestion);
-  
-  if (userAnswer === correctAnswer) {
-    feedbackDiv.textContent = `Correct! ${currentQuestion.a} × ${currentQuestion.b} = ${correctAnswer}`;
-    feedbackDiv.className = 'feedback correct';
-    updateProgress(questionKey, true);
-  } else {
-    feedbackDiv.textContent = `Incorrect! ${currentQuestion.a} × ${currentQuestion.b} = ${correctAnswer}`;
-    feedbackDiv.className = 'feedback incorrect';
-    updateProgress(questionKey, false);
-  }
-  
-  answerInput.value = '';
-  getNextQuestion();
-  renderGrid();
-}
+        let currentQuestion = null;
+        let currentAnswer = null;
+        let timerInterval = null;
+        let timeRemaining = 7000; // 7 seconds in milliseconds
+        let answered = false;
+        let tieredMode = true; // Tiered mode is default
 
-function hsvToRgb(h, s, v) {
-  let f = (n, k = (n + h / 60) % 6) => v - v * s * Math.max(Math.min(k, 4 - k, 1), 0);
-  return `rgb(${Math.round(f(5) * 255)}, ${Math.round(f(3) * 255)}, ${Math.round(f(1) * 255)})`;
-}
+        // DOM elements
+        const questionEl = document.getElementById('question');
+        const answersEl = document.getElementById('answers');
+        const timerBar = document.getElementById('timerBar');
+        const statusEl = document.getElementById('status');
+        const nextBtn = document.getElementById('nextBtn');
+        const progressGrid = document.getElementById('progressGrid');
+        const modeToggle = document.getElementById('modeToggle');
+        const resetBtn = document.getElementById('resetBtn');
 
-function renderGrid() {
-  gridDiv.innerHTML = '';
-  for (let a = 1; a <= MAX_NUMBER; a++) {
-    for (let b = 1; b <= MAX_NUMBER; b++) {
-      const key = JSON.stringify({ a, b });
-      const score = calculateScore(key);
-      const isUnlocked = batches.slice(0, unlockedBatches.length).some(batch => batch.includes(a) || batch.includes(b));
-      const hue = score * 120; // Red (0) to Green (120)
-      const color = isUnlocked ? hsvToRgb(hue, 1, 1) : 'rgb(200, 200, 200)';
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      cell.style.backgroundColor = color;
-      cell.textContent = `${a}×${b}`;
-      gridDiv.appendChild(cell);
-    }
-  }
-}
-submitButton.addEventListener('click', checkAnswer);
-answerInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') checkAnswer();
-});
-resetButton.addEventListener('click', resetProgress);
+        // Get unlocked numbers based on current mastery in tiered mode
+        function getUnlockedNumbers() {
+            if (!tieredMode) {
+                return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+            }
 
-renderGrid();
-getNextQuestion();
+            const unlockedNumbers = new Set();
 
+            for (let tierIndex = 0; tierIndex < tiers.length; tierIndex++) {
+                const tierNumbers = tiers[tierIndex];
 
+                // Check if all questions from previous tiers are mastered
+                if (tierIndex > 0) {
+                    let allPreviousMastered = true;
 
+                    // Get all numbers from previous tiers
+                    const previousNumbers = new Set();
+                    for (let i = 0; i < tierIndex; i++) {
+                        tiers[i].forEach(num => previousNumbers.add(num));
+                    }
 
-  </script>
+                    // Check if all questions involving previous tier numbers are mastered
+                    for (let i = 1; i <= 12; i++) {
+                        for (let j = 1; j <= 12; j++) {
+                            // Check if this question involves a previously unlocked number
+                            if (previousNumbers.has(i) || previousNumbers.has(j)) {
+                                const key = getMasteryKey(i, j);
+                                if (mastery[key] < 5) {
+                                    allPreviousMastered = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!allPreviousMastered) break;
+                    }
+
+                    if (!allPreviousMastered) {
+                        break; // Don't unlock this tier yet
+                    }
+                }
+
+                // Unlock this tier
+                tierNumbers.forEach(num => unlockedNumbers.add(num));
+            }
+
+            return Array.from(unlockedNumbers);
+        }
+
+        // Check if a question is unlocked
+        function isQuestionUnlocked(a, b) {
+            if (!tieredMode) return true;
+
+            const unlockedNumbers = getUnlockedNumbers();
+            return unlockedNumbers.includes(a) || unlockedNumbers.includes(b);
+        }
+
+        // Initialize progress grid
+        function initProgressGrid() {
+            progressGrid.innerHTML = '';
+            for (let i = 1; i <= 12; i++) {
+                for (let j = 1; j <= 12; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'progress-cell';
+                    cell.textContent = `${i}×${j}`;
+                    cell.id = `cell-${i}x${j}`;
+                    progressGrid.appendChild(cell);
+                }
+            }
+            updateProgressGrid();
+        }
+
+        // Update progress grid colors based on mastery
+        function updateProgressGrid() {
+            for (let i = 1; i <= 12; i++) {
+                for (let j = 1; j <= 12; j++) {
+                    const cellKey = `${i}x${j}`;
+                    const cell = document.getElementById(`cell-${cellKey}`);
+                    const masteryLevel = mastery[getMasteryKey(i, j)];
+
+                    // Check if question is locked in tiered mode
+                    if (!isQuestionUnlocked(i, j)) {
+                        cell.classList.add('locked');
+                    } else {
+                        cell.classList.remove('locked');
+
+                        // Interpolate from white (0) to bright green (5)
+                        const ratio = masteryLevel / 5;
+                        const r = Math.round(255 * (1 - ratio) + 34 * ratio);
+                        const g = Math.round(255 * (1 - ratio) + 197 * ratio);
+                        const b = Math.round(255 * (1 - ratio) + 94 * ratio);
+
+                        cell.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+                    }
+                }
+            }
+        }
+
+        // Calculate weight based on mastery (0 -> 1.0, 5 -> 0.01)
+        function getWeight(masteryLevel) {
+            return 1 - (masteryLevel / 5) * 0.99;
+        }
+
+        // Select a random question based on weights
+        function selectWeightedQuestion() {
+            const questions = [];
+            const weights = [];
+
+            for (let i = 1; i <= 12; i++) {
+                for (let j = 1; j <= 12; j++) {
+                    // Skip locked questions in tiered mode
+                    if (!isQuestionUnlocked(i, j)) continue;
+
+                    const key = getMasteryKey(i, j);
+                    questions.push({ a: i, b: j, key: key });
+                    weights.push(getWeight(mastery[key]));
+                }
+            }
+
+            // Weighted random selection
+            const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+            let random = Math.random() * totalWeight;
+
+            for (let i = 0; i < questions.length; i++) {
+                random -= weights[i];
+                if (random <= 0) {
+                    return questions[i];
+                }
+            }
+
+            return questions[questions.length - 1];
+        }
+
+        // Generate 5 wrong answers that are different from correct answer
+        function generateWrongAnswers(correct) {
+            const wrong = new Set();
+
+            while (wrong.size < 5) {
+                // Generate plausible wrong answers
+                const strategy = Math.floor(Math.random() * 4);
+                let wrongAnswer;
+
+                switch(strategy) {
+                    case 0: // Off by small amount
+                        wrongAnswer = correct + (Math.random() < 0.5 ? 1 : -1) * (Math.floor(Math.random() * 5) + 1);
+                        break;
+                    case 1: // Common mistake (add instead of multiply)
+                        wrongAnswer = currentQuestion.a + currentQuestion.b;
+                        break;
+                    case 2: // One factor off
+                        wrongAnswer = (currentQuestion.a + (Math.random() < 0.5 ? 1 : -1)) * currentQuestion.b;
+                        break;
+                    default: // Random in plausible range
+                        wrongAnswer = Math.floor(Math.random() * 100) + 1;
+                }
+
+                if (wrongAnswer !== correct && wrongAnswer > 0 && wrongAnswer <= 144) {
+                    wrong.add(wrongAnswer);
+                }
+            }
+
+            return Array.from(wrong);
+        }
+
+        // Start timer countdown
+        function startTimer() {
+            timeRemaining = 7000; // 7 seconds in milliseconds
+            const startTime = Date.now();
+            const totalTime = 7000;
+
+            // Reset bar to full width
+            timerBar.style.width = '100%';
+            timerBar.classList.remove('urgent');
+
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                timeRemaining = totalTime - elapsed;
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    timerBar.style.width = '0%';
+                    if (!answered) {
+                        handleTimeout();
+                    }
+                } else {
+                    const percentage = (timeRemaining / totalTime) * 100;
+                    timerBar.style.width = percentage + '%';
+
+                    // Change to urgent color when less than 2 seconds remain
+                    if (timeRemaining <= 2000 && !timerBar.classList.contains('urgent')) {
+                        timerBar.classList.add('urgent');
+                    }
+                }
+            }, 50); // Update every 50ms for smooth animation
+        }
+
+        // Handle answer click
+        function handleAnswer(selectedAnswer, button) {
+            if (answered) return;
+
+            answered = true;
+            clearInterval(timerInterval);
+
+            // Disable all buttons
+            const allButtons = answersEl.querySelectorAll('.answer-btn');
+            allButtons.forEach(btn => btn.disabled = true);
+
+            // Check if correct
+            const isCorrect = selectedAnswer === currentAnswer;
+
+            if (isCorrect) {
+                button.classList.add('correct');
+                statusEl.textContent = '✓ Correct!';
+                statusEl.className = 'status-message correct';
+
+                // Increase mastery
+                if (mastery[currentQuestion.key] < 5) {
+                    mastery[currentQuestion.key]++;
+                }
+            } else {
+                button.classList.add('incorrect');
+                statusEl.textContent = `✗ Wrong! The answer is ${currentAnswer}`;
+                statusEl.className = 'status-message incorrect';
+
+                // Decrease mastery
+                if (mastery[currentQuestion.key] > 0) {
+                    mastery[currentQuestion.key]--;
+                }
+
+                // Highlight correct answer
+                allButtons.forEach(btn => {
+                    if (parseInt(btn.textContent) === currentAnswer) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+
+            saveProgress();
+            updateProgressGrid();
+        }
+
+        // Handle timeout
+        function handleTimeout() {
+            answered = true;
+
+            // Disable all buttons
+            const allButtons = answersEl.querySelectorAll('.answer-btn');
+            allButtons.forEach(btn => btn.disabled = true);
+
+            statusEl.textContent = `⏱ Time's up! The answer is ${currentAnswer}`;
+            statusEl.className = 'status-message incorrect';
+
+            // Decrease mastery
+            if (mastery[currentQuestion.key] > 0) {
+                mastery[currentQuestion.key]--;
+            }
+
+            // Highlight correct answer
+            allButtons.forEach(btn => {
+                if (parseInt(btn.textContent) === currentAnswer) {
+                    btn.classList.add('correct');
+                }
+            });
+
+            saveProgress();
+            updateProgressGrid();
+        }
+
+        // Generate next question
+        function nextQuestion() {
+            answered = false;
+            statusEl.textContent = '';
+            statusEl.className = 'status-message';
+
+            // Select question
+            currentQuestion = selectWeightedQuestion();
+            currentAnswer = currentQuestion.a * currentQuestion.b;
+
+            // Display question
+            questionEl.textContent = `${currentQuestion.a} × ${currentQuestion.b} = ?`;
+
+            // Generate answers
+            const wrongAnswers = generateWrongAnswers(currentAnswer);
+            const allAnswers = [...wrongAnswers, currentAnswer];
+
+            // Shuffle answers
+            allAnswers.sort(() => Math.random() - 0.5);
+
+            // Display answer buttons
+            answersEl.innerHTML = '';
+            allAnswers.forEach(answer => {
+                const button = document.createElement('button');
+                button.className = 'answer-btn';
+                button.textContent = answer;
+                button.onclick = () => handleAnswer(answer, button);
+                answersEl.appendChild(button);
+            });
+
+            // Start timer
+            startTimer();
+        }
+
+        // Next button click handler
+        nextBtn.addEventListener('click', nextQuestion);
+
+        // Mode toggle handler
+        modeToggle.addEventListener('change', function() {
+            tieredMode = this.checked;
+            saveProgress();
+            updateProgressGrid();
+        });
+
+        // Reset button click handler
+        resetBtn.addEventListener('click', resetProgress);
+
+        // Initialize
+        loadProgress();
+        initProgressGrid();
+    </script>
 </body>
 </html>
