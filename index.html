@@ -29,6 +29,9 @@
         .content-wrapper {
             display: grid;
             grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+                "question progress"
+                "answers progress";
             gap: 30px;
             align-items: start;
         }
@@ -41,7 +44,8 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
-        .game-area {
+        .question-section,
+        .answers-section {
             background: white;
             border-radius: 20px;
             padding: 40px;
@@ -49,8 +53,12 @@
         }
 
         .question-section {
+            grid-area: question;
             text-align: center;
-            margin-bottom: 30px;
+        }
+
+        .answers-section {
+            grid-area: answers;
         }
 
         .question {
@@ -232,6 +240,7 @@
         }
 
         .progress-section {
+            grid-area: progress;
             background: white;
             border-radius: 20px;
             padding: 30px;
@@ -281,6 +290,16 @@
         @media (max-width: 768px) {
             .content-wrapper {
                 grid-template-columns: 1fr;
+                grid-template-areas:
+                    "question"
+                    "progress"
+                    "answers";
+            }
+
+            .question-section,
+            .answers-section,
+            .progress-section {
+                padding: 24px;
             }
 
             .answers-grid {
@@ -316,24 +335,24 @@
         </div>
 
         <div class="content-wrapper">
-            <div class="game-area">
-                <div class="question-section">
-                    <div class="timer-container">
-                        <div class="timer-bar" id="timerBar"></div>
-                    </div>
-                    <div class="question" id="question">Click "Next Question" to start!</div>
-                    <div class="status-message" id="status"></div>
+            <div class="question-section">
+                <div class="timer-container">
+                    <div class="timer-bar" id="timerBar"></div>
                 </div>
-
-                <div class="answers-grid" id="answers"></div>
-
-                <button class="next-btn" id="nextBtn">Next Question</button>
+                <div class="question" id="question">Click "Next Question" to start!</div>
+                <div class="status-message" id="status"></div>
             </div>
 
             <div class="progress-section">
                 <div class="progress-title">Your Progress (12×12 Times Tables)</div>
                 <div class="progress-grid" id="progressGrid"></div>
                 <button class="reset-btn" id="resetBtn">Reset All Progress</button>
+            </div>
+
+            <div class="answers-section">
+                <div class="answers-grid" id="answers"></div>
+
+                <button class="next-btn" id="nextBtn">Next Question</button>
             </div>
         </div>
     </div>
