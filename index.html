@@ -424,6 +424,31 @@
             opacity: 0.5;
         }
 
+        .mastery-smiley {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.18);
+            font-size: min(78vw, 78vh);
+            line-height: 1;
+            pointer-events: none;
+            animation: mastery-smiley-celebration 2s ease-in forwards;
+        }
+
+        @keyframes mastery-smiley-celebration {
+            0%, 50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1.08);
+            }
+        }
+
         @media (max-width: 768px) {
             .top-bar {
                 flex-direction: column;
@@ -515,6 +540,8 @@
             </div>
         </div>
     </div>
+
+    <div class="mastery-smiley hidden" id="masterySmiley" aria-hidden="true">😄</div>
 
     <script>
         const TIMES_TABLES_SKILL = 'times-tables';
@@ -630,6 +657,7 @@
         const skillMasteryDisplay = document.getElementById('skillMasteryDisplay');
         const skillMasteryPercent = document.getElementById('skillMasteryPercent');
         const skillMasteryBar = document.getElementById('skillMasteryBar');
+        const masterySmiley = document.getElementById('masterySmiley');
 
         function getUnlockedNumbers() {
             if (!tieredMode) return [1,2,3,4,5,6,7,8,9,10,11,12];
@@ -923,10 +951,12 @@
                 if (activeSkillId === TIMES_TABLES_SKILL) {
                     if (mastery[currentQuestion.key] < 5) mastery[currentQuestion.key]++;
                 } else {
+                    const previousMastery = skillMastery[activeSkillId] || 0;
                     skillMastery[activeSkillId] = Math.min(100, skillMastery[activeSkillId] + 10);
-                    if (skillMastery[activeSkillId] >= 100) {
+                    if (previousMastery < 100 && skillMastery[activeSkillId] >= 100) {
                         statusEl.textContent = '✓ Mastered! Returning to skills...';
-                        setTimeout(showSkillSelection, 900);
+                        showMasterySmiley();
+                        setTimeout(showSkillSelection, 2000);
                     }
                 }
             } else {
@@ -944,6 +974,16 @@
             }
             saveProgress();
             if (activeSkillId === TIMES_TABLES_SKILL) updateProgressGrid(); else updateSkillMasteryDisplay();
+        }
+
+        function showMasterySmiley() {
+            masterySmiley.classList.remove('hidden');
+            masterySmiley.style.animation = 'none';
+            masterySmiley.offsetHeight;
+            masterySmiley.style.animation = '';
+            setTimeout(() => {
+                masterySmiley.classList.add('hidden');
+            }, 2000);
         }
 
         function handleTimeout() {
