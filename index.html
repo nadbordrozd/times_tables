@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Times Tables Master</title>
+    <title>Skills Master</title>
     <style>
         * {
             box-sizing: border-box;
@@ -26,6 +26,37 @@
             width: 100%;
         }
 
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .top-bar h1 {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .nav-btn {
+            padding: 14px 22px;
+            font-size: 1.05em;
+            font-weight: bold;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+        }
+
         .content-wrapper {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -36,10 +67,73 @@
             align-items: start;
         }
 
+        .content-wrapper.skill-mode {
+            grid-template-areas:
+                "question progress"
+                "answers progress";
+        }
+
+        .selection-screen {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .selection-screen.hidden,
+        .game-screen.hidden,
+        .hidden {
+            display: none;
+        }
+
+        .selection-title {
+            text-align: center;
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .selection-subtitle {
+            text-align: center;
+            color: #555;
+            margin-bottom: 28px;
+            font-size: 1.1em;
+        }
+
+        .skill-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+        }
+
+        .skill-card {
+            border: 3px solid #e0e0e0;
+            border-radius: 16px;
+            background: #f8f9fa;
+            padding: 24px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+
+        .skill-card:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+        }
+
+        .skill-card h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .skill-card p {
+            color: #666;
+            line-height: 1.4;
+        }
+
         h1 {
             text-align: center;
             color: white;
-            margin-bottom: 30px;
             font-size: 2.5em;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
@@ -262,6 +356,35 @@
             margin: 0 auto;
         }
 
+        .mastery-display {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        .mastery-percent {
+            font-size: 4em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .mastery-bar-container {
+            height: 26px;
+            width: 100%;
+            background: #e0e0e0;
+            border-radius: 999px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .mastery-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+            border-radius: 999px;
+            transition: width 0.3s;
+        }
+
         .progress-cell {
             aspect-ratio: 1;
             border: 1px solid #ccc;
@@ -288,6 +411,10 @@
         }
 
         @media (max-width: 768px) {
+            .top-bar {
+                flex-direction: column;
+            }
+
             .content-wrapper {
                 grid-template-columns: 1fr;
                 grid-template-areas:
@@ -323,62 +450,100 @@
 </head>
 <body>
     <div class="container">
-        <h1>Times Tables Master</h1>
-
-        <div class="mode-toggle">
-            <span>Regular Mode</span>
-            <label class="toggle-switch">
-                <input type="checkbox" id="modeToggle" checked>
-                <span class="toggle-slider"></span>
-            </label>
-            <span>Tiered Mode</span>
+        <div class="top-bar">
+            <button class="nav-btn hidden" id="backToTimesBtn">← Times Tables</button>
+            <h1 id="pageTitle">Times Tables Master</h1>
+            <button class="nav-btn" id="skillsBtn">Skills</button>
         </div>
 
-        <div class="content-wrapper">
-            <div class="question-section">
-                <div class="timer-container">
-                    <div class="timer-bar" id="timerBar"></div>
+        <div class="selection-screen hidden" id="selectionScreen">
+            <div class="selection-title">Choose a skill</div>
+            <div class="selection-subtitle">Answer questions to build mastery. Correct answers add 10%; wrong answers subtract 20%.</div>
+            <div class="skill-list" id="skillList"></div>
+        </div>
+
+        <div class="game-screen" id="gameScreen">
+            <div class="mode-toggle" id="modeToggleRow">
+                <span>Regular Mode</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="modeToggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+                <span>Tiered Mode</span>
+            </div>
+
+            <div class="content-wrapper" id="contentWrapper">
+                <div class="question-section">
+                    <div class="timer-container" id="timerContainer">
+                        <div class="timer-bar" id="timerBar"></div>
+                    </div>
+                    <div class="question" id="question">Click "Next Question" to start!</div>
+                    <div class="status-message" id="status"></div>
                 </div>
-                <div class="question" id="question">Click "Next Question" to start!</div>
-                <div class="status-message" id="status"></div>
-            </div>
 
-            <div class="progress-section">
-                <div class="progress-title">Your Progress (12×12 Times Tables)</div>
-                <div class="progress-grid" id="progressGrid"></div>
-                <button class="reset-btn" id="resetBtn">Reset All Progress</button>
-            </div>
+                <div class="progress-section">
+                    <div class="progress-title" id="progressTitle">Your Progress (12×12 Times Tables)</div>
+                    <div class="progress-grid" id="progressGrid"></div>
+                    <div class="mastery-display hidden" id="skillMasteryDisplay">
+                        <div class="mastery-percent" id="skillMasteryPercent">0%</div>
+                        <div class="mastery-bar-container">
+                            <div class="mastery-bar" id="skillMasteryBar"></div>
+                        </div>
+                    </div>
+                    <button class="reset-btn" id="resetBtn">Reset All Progress</button>
+                </div>
 
-            <div class="answers-section">
-                <div class="answers-grid" id="answers"></div>
+                <div class="answers-section">
+                    <div class="answers-grid" id="answers"></div>
 
-                <button class="next-btn" id="nextBtn">Next Question</button>
+                    <button class="next-btn" id="nextBtn">Next Question</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Normalize key so a*b and b*a share the same mastery
+        const TIMES_TABLES_SKILL = 'times-tables';
+        const practiceSkills = [
+            {
+                id: 'addition-1',
+                name: 'Addition 1',
+                description: 'Single digit addition with answers from 0 to 18.',
+                generateQuestion: generateAdditionQuestion
+            },
+            {
+                id: 'distributive-property-1',
+                name: 'Distributive Property 1',
+                description: 'Expand simple brackets such as 3(2 + a).',
+                generateQuestion: generateDistributiveQuestion
+            }
+        ];
+
         function getMasteryKey(a, b) {
-            // Always put smaller number first
             return a <= b ? `${a}x${b}` : `${b}x${a}`;
         }
 
-        // Local storage functions
+        function shuffle(items) {
+            return items.sort(() => Math.random() - 0.5);
+        }
+
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
         function saveProgress() {
             localStorage.setItem('timesTablesMastery', JSON.stringify(mastery));
             localStorage.setItem('timesTablesTieredMode', JSON.stringify(tieredMode));
+            localStorage.setItem('skillMastery', JSON.stringify(skillMastery));
         }
 
         function loadProgress() {
             const savedMastery = localStorage.getItem('timesTablesMastery');
             const savedMode = localStorage.getItem('timesTablesTieredMode');
+            const savedSkillMastery = localStorage.getItem('skillMastery');
 
-            if (savedMastery) {
-                const loaded = JSON.parse(savedMastery);
-                Object.assign(mastery, loaded);
-            }
-
+            if (savedMastery) Object.assign(mastery, JSON.parse(savedMastery));
+            if (savedSkillMastery) Object.assign(skillMastery, JSON.parse(savedSkillMastery));
             if (savedMode !== null) {
                 tieredMode = JSON.parse(savedMode);
                 modeToggle.checked = tieredMode;
@@ -386,120 +551,93 @@
         }
 
         function resetProgress() {
-            const confirmed = confirm('Are you sure you want to reset all progress? This cannot be undone.');
+            const confirmed = confirm('Are you sure you want to reset progress for this page? This cannot be undone.');
+            if (!confirmed) return;
 
-            if (confirmed) {
-                // Reset all mastery levels to 0
-                for (let key in mastery) {
-                    mastery[key] = 0;
-                }
-
-                // Clear localStorage
+            if (activeSkillId === TIMES_TABLES_SKILL) {
+                for (let key in mastery) mastery[key] = 0;
                 localStorage.removeItem('timesTablesMastery');
                 localStorage.removeItem('timesTablesTieredMode');
-
-                // Update the display
                 updateProgressGrid();
-
-                // Reset status message
-                statusEl.textContent = '';
-                statusEl.className = 'status-message';
-                questionEl.textContent = 'Click "Next Question" to start!';
-                answersEl.innerHTML = '';
+            } else {
+                skillMastery[activeSkillId] = 0;
+                saveProgress();
+                updateSkillMasteryDisplay();
             }
+
+            statusEl.textContent = '';
+            statusEl.className = 'status-message';
+            questionEl.textContent = activeSkillId === TIMES_TABLES_SKILL ? 'Click "Next Question" to start!' : 'Click "Next Question" to start this skill!';
+            answersEl.innerHTML = '';
         }
 
-        // Initialize mastery tracking for all unique questions
         const mastery = {};
         for (let i = 1; i <= 12; i++) {
-            for (let j = i; j <= 12; j++) {
-                mastery[getMasteryKey(i, j)] = 0;
-            }
+            for (let j = i; j <= 12; j++) mastery[getMasteryKey(i, j)] = 0;
         }
 
-        // Tiered mode configuration
-        const tiers = [
-            [1, 2, 10],    // Tier 1
-            [5, 4],        // Tier 2
-            [3, 6],        // Tier 3
-            [9, 8],        // Tier 4
-            [7, 11, 12]    // Tier 5
-        ];
+        const skillMastery = {};
+        practiceSkills.forEach(skill => skillMastery[skill.id] = 0);
+
+        const tiers = [[1, 2, 10], [5, 4], [3, 6], [9, 8], [7, 11, 12]];
 
         let currentQuestion = null;
         let currentAnswer = null;
         let timerInterval = null;
-        let timeRemaining = 7000; // 7 seconds in milliseconds
+        let timeRemaining = 7000;
         let answered = false;
-        let tieredMode = true; // Tiered mode is default
+        let tieredMode = true;
+        let activeSkillId = TIMES_TABLES_SKILL;
 
-        // DOM elements
         const questionEl = document.getElementById('question');
         const answersEl = document.getElementById('answers');
         const timerBar = document.getElementById('timerBar');
+        const timerContainer = document.getElementById('timerContainer');
         const statusEl = document.getElementById('status');
         const nextBtn = document.getElementById('nextBtn');
         const progressGrid = document.getElementById('progressGrid');
+        const progressTitle = document.getElementById('progressTitle');
         const modeToggle = document.getElementById('modeToggle');
+        const modeToggleRow = document.getElementById('modeToggleRow');
         const resetBtn = document.getElementById('resetBtn');
+        const skillsBtn = document.getElementById('skillsBtn');
+        const backToTimesBtn = document.getElementById('backToTimesBtn');
+        const selectionScreen = document.getElementById('selectionScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const skillList = document.getElementById('skillList');
+        const pageTitle = document.getElementById('pageTitle');
+        const contentWrapper = document.getElementById('contentWrapper');
+        const skillMasteryDisplay = document.getElementById('skillMasteryDisplay');
+        const skillMasteryPercent = document.getElementById('skillMasteryPercent');
+        const skillMasteryBar = document.getElementById('skillMasteryBar');
 
-        // Get unlocked numbers based on current mastery in tiered mode
         function getUnlockedNumbers() {
-            if (!tieredMode) {
-                return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-            }
-
+            if (!tieredMode) return [1,2,3,4,5,6,7,8,9,10,11,12];
             const unlockedNumbers = new Set();
-
             for (let tierIndex = 0; tierIndex < tiers.length; tierIndex++) {
                 const tierNumbers = tiers[tierIndex];
-
-                // Check if all questions from previous tiers are mastered
                 if (tierIndex > 0) {
                     let allPreviousMastered = true;
-
-                    // Get all numbers from previous tiers
                     const previousNumbers = new Set();
-                    for (let i = 0; i < tierIndex; i++) {
-                        tiers[i].forEach(num => previousNumbers.add(num));
-                    }
-
-                    // Check if all questions involving previous tier numbers are mastered
+                    for (let i = 0; i < tierIndex; i++) tiers[i].forEach(num => previousNumbers.add(num));
                     for (let i = 1; i <= 12; i++) {
                         for (let j = 1; j <= 12; j++) {
-                            // Check if this question involves a previously unlocked number
                             if (previousNumbers.has(i) || previousNumbers.has(j)) {
-                                const key = getMasteryKey(i, j);
-                                if (mastery[key] < 5) {
-                                    allPreviousMastered = false;
-                                    break;
-                                }
+                                if (mastery[getMasteryKey(i, j)] < 5) allPreviousMastered = false;
                             }
                         }
-                        if (!allPreviousMastered) break;
                     }
-
-                    if (!allPreviousMastered) {
-                        break; // Don't unlock this tier yet
-                    }
+                    if (!allPreviousMastered) break;
                 }
-
-                // Unlock this tier
                 tierNumbers.forEach(num => unlockedNumbers.add(num));
             }
-
             return Array.from(unlockedNumbers);
         }
 
-        // Check if a question is unlocked
         function isQuestionUnlocked(a, b) {
-            if (!tieredMode) return true;
-
-            const unlockedNumbers = getUnlockedNumbers();
-            return unlockedNumbers.includes(a) || unlockedNumbers.includes(b);
+            return !tieredMode || getUnlockedNumbers().includes(a) || getUnlockedNumbers().includes(b);
         }
 
-        // Initialize progress grid
         function initProgressGrid() {
             progressGrid.innerHTML = '';
             for (let i = 1; i <= 12; i++) {
@@ -514,223 +652,215 @@
             updateProgressGrid();
         }
 
-        // Update progress grid colors based on mastery
         function updateProgressGrid() {
             for (let i = 1; i <= 12; i++) {
                 for (let j = 1; j <= 12; j++) {
-                    const cellKey = `${i}x${j}`;
-                    const cell = document.getElementById(`cell-${cellKey}`);
+                    const cell = document.getElementById(`cell-${i}x${j}`);
                     const masteryLevel = mastery[getMasteryKey(i, j)];
-
-                    // Check if question is locked in tiered mode
                     if (!isQuestionUnlocked(i, j)) {
                         cell.classList.add('locked');
                     } else {
                         cell.classList.remove('locked');
-
-                        // Interpolate from white (0) to bright green (5)
                         const ratio = masteryLevel / 5;
                         const r = Math.round(255 * (1 - ratio) + 34 * ratio);
                         const g = Math.round(255 * (1 - ratio) + 197 * ratio);
                         const b = Math.round(255 * (1 - ratio) + 94 * ratio);
-
                         cell.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
                     }
                 }
             }
         }
 
-        // Calculate weight based on mastery (0 -> 1.0, 5 -> 0.01)
         function getWeight(masteryLevel) {
             return 1 - (masteryLevel / 5) * 0.99;
         }
 
-        // Select a random question based on weights
         function selectWeightedQuestion() {
             const questions = [];
             const weights = [];
-
             for (let i = 1; i <= 12; i++) {
                 for (let j = 1; j <= 12; j++) {
-                    // Skip locked questions in tiered mode
                     if (!isQuestionUnlocked(i, j)) continue;
-
                     const key = getMasteryKey(i, j);
-                    questions.push({ a: i, b: j, key: key });
+                    questions.push({ a: i, b: j, key });
                     weights.push(getWeight(mastery[key]));
                 }
             }
-
-            // Weighted random selection
             const totalWeight = weights.reduce((sum, w) => sum + w, 0);
             let random = Math.random() * totalWeight;
-
             for (let i = 0; i < questions.length; i++) {
                 random -= weights[i];
-                if (random <= 0) {
-                    return questions[i];
-                }
+                if (random <= 0) return questions[i];
             }
-
             return questions[questions.length - 1];
         }
 
-        // Generate 5 wrong answers that are different from correct answer
         function generateWrongAnswers(correct) {
             const wrong = new Set();
-
             while (wrong.size < 5) {
-                // Generate plausible wrong answers
                 const strategy = Math.floor(Math.random() * 4);
                 let wrongAnswer;
-
                 switch(strategy) {
-                    case 0: // Off by small amount
-                        wrongAnswer = correct + (Math.random() < 0.5 ? 1 : -1) * (Math.floor(Math.random() * 5) + 1);
-                        break;
-                    case 1: // Common mistake (add instead of multiply)
-                        wrongAnswer = currentQuestion.a + currentQuestion.b;
-                        break;
-                    case 2: // One factor off
-                        wrongAnswer = (currentQuestion.a + (Math.random() < 0.5 ? 1 : -1)) * currentQuestion.b;
-                        break;
-                    default: // Random in plausible range
-                        wrongAnswer = Math.floor(Math.random() * 100) + 1;
+                    case 0: wrongAnswer = correct + (Math.random() < 0.5 ? 1 : -1) * randomInt(1, 5); break;
+                    case 1: wrongAnswer = currentQuestion.a + currentQuestion.b; break;
+                    case 2: wrongAnswer = (currentQuestion.a + (Math.random() < 0.5 ? 1 : -1)) * currentQuestion.b; break;
+                    default: wrongAnswer = randomInt(1, 144);
                 }
-
-                if (wrongAnswer !== correct && wrongAnswer > 0 && wrongAnswer <= 144) {
-                    wrong.add(wrongAnswer);
-                }
+                if (wrongAnswer !== correct && wrongAnswer > 0 && wrongAnswer <= 144) wrong.add(wrongAnswer);
             }
-
             return Array.from(wrong);
         }
 
-        // Start timer countdown
+        function formatVariableTerm(coefficient, variable) {
+            if (coefficient === 0) return '0';
+            if (coefficient === 1) return variable;
+            if (coefficient === -1) return `-${variable}`;
+            return `${coefficient}${variable}`;
+        }
+
+        function formatExpression(constant, coefficient, variable) {
+            const term = formatVariableTerm(Math.abs(coefficient), variable);
+            if (coefficient >= 0) return `${constant} + ${term}`;
+            return `${constant} - ${term}`;
+        }
+
+        function generateAdditionQuestion() {
+            const a = randomInt(0, 9);
+            const b = randomInt(0, 9);
+            const correct = a + b;
+            const wrong = new Set();
+            while (wrong.size < 5) {
+                const candidate = randomInt(0, 18);
+                if (candidate !== correct) wrong.add(candidate);
+            }
+            return { prompt: `${a} + ${b} = ?`, correctAnswer: correct.toString(), answers: shuffle([...wrong].map(String).concat(correct.toString())) };
+        }
+
+        function generateDistributiveQuestion() {
+            const outside = randomInt(2, 9);
+            const constant = randomInt(1, 9);
+            const variable = ['a', 'b', 'm', 'n', 'p', 'x', 'y', 'z'][randomInt(0, 7)];
+            const innerCoefficient = Math.random() < 0.5 ? 1 : randomInt(2, 9);
+            const sign = Math.random() < 0.5 ? 1 : -1;
+            const variableTerm = formatVariableTerm(innerCoefficient, variable);
+            const operator = sign === 1 ? '+' : '-';
+            const bracket = `(${constant} ${operator} ${variableTerm})`;
+            const prompt = Math.random() < 0.5 ? `${outside}${bracket}` : `${bracket}${outside}`;
+            const correctConstant = outside * constant;
+            const correctCoefficient = outside * innerCoefficient * sign;
+            const correctAnswer = formatExpression(correctConstant, correctCoefficient, variable);
+            const wrong = new Set();
+            const candidates = [
+                formatExpression(correctConstant, innerCoefficient * sign, variable),
+                formatExpression(constant, correctCoefficient, variable),
+                formatExpression(correctConstant + outside, correctCoefficient, variable),
+                formatExpression(correctConstant, -correctCoefficient, variable),
+                formatExpression(outside + constant, (outside + innerCoefficient) * sign, variable),
+                formatExpression(correctConstant - outside, correctCoefficient, variable),
+                formatExpression(correctConstant, correctCoefficient + sign * outside, variable)
+            ];
+            shuffle(candidates).forEach(candidate => {
+                if (candidate !== correctAnswer && wrong.size < 5) wrong.add(candidate);
+            });
+            while (wrong.size < 5) {
+                const candidate = formatExpression(randomInt(1, 81), randomInt(1, 81) * (Math.random() < 0.5 ? 1 : -1), variable);
+                if (candidate !== correctAnswer) wrong.add(candidate);
+            }
+            return { prompt: `${prompt} = ?`, correctAnswer, answers: shuffle([...wrong, correctAnswer]) };
+        }
+
         function startTimer() {
-            timeRemaining = 7000; // 7 seconds in milliseconds
+            timeRemaining = 7000;
             const startTime = Date.now();
             const totalTime = 7000;
-
-            // Reset bar to full width
             timerBar.style.width = '100%';
             timerBar.classList.remove('urgent');
-
             timerInterval = setInterval(() => {
                 const elapsed = Date.now() - startTime;
                 timeRemaining = totalTime - elapsed;
-
                 if (timeRemaining <= 0) {
                     clearInterval(timerInterval);
                     timerBar.style.width = '0%';
-                    if (!answered) {
-                        handleTimeout();
-                    }
+                    if (!answered) handleTimeout();
                 } else {
-                    const percentage = (timeRemaining / totalTime) * 100;
-                    timerBar.style.width = percentage + '%';
-
-                    // Change to urgent color when less than 2 seconds remain
-                    if (timeRemaining <= 2000 && !timerBar.classList.contains('urgent')) {
-                        timerBar.classList.add('urgent');
-                    }
+                    timerBar.style.width = ((timeRemaining / totalTime) * 100) + '%';
+                    if (timeRemaining <= 2000) timerBar.classList.add('urgent');
                 }
-            }, 50); // Update every 50ms for smooth animation
+            }, 50);
         }
 
-        // Handle answer click
         function handleAnswer(selectedAnswer, button) {
             if (answered) return;
-
             answered = true;
             clearInterval(timerInterval);
-
-            // Disable all buttons
             const allButtons = answersEl.querySelectorAll('.answer-btn');
             allButtons.forEach(btn => btn.disabled = true);
-
-            // Check if correct
             const isCorrect = selectedAnswer === currentAnswer;
-
             if (isCorrect) {
                 button.classList.add('correct');
                 statusEl.textContent = '✓ Correct!';
                 statusEl.className = 'status-message correct';
-
-                // Increase mastery
-                if (mastery[currentQuestion.key] < 5) {
-                    mastery[currentQuestion.key]++;
+                if (activeSkillId === TIMES_TABLES_SKILL) {
+                    if (mastery[currentQuestion.key] < 5) mastery[currentQuestion.key]++;
+                } else {
+                    skillMastery[activeSkillId] = Math.min(100, skillMastery[activeSkillId] + 10);
+                    if (skillMastery[activeSkillId] >= 100) {
+                        statusEl.textContent = '✓ Mastered! Returning to skills...';
+                        setTimeout(showSkillSelection, 900);
+                    }
                 }
             } else {
                 button.classList.add('incorrect');
                 statusEl.textContent = `✗ Wrong! The answer is ${currentAnswer}`;
                 statusEl.className = 'status-message incorrect';
-
-                // Decrease mastery
-                if (mastery[currentQuestion.key] > 0) {
-                    mastery[currentQuestion.key]--;
+                if (activeSkillId === TIMES_TABLES_SKILL) {
+                    if (mastery[currentQuestion.key] > 0) mastery[currentQuestion.key]--;
+                } else {
+                    skillMastery[activeSkillId] = Math.max(0, skillMastery[activeSkillId] - 20);
                 }
-
-                // Highlight correct answer
                 allButtons.forEach(btn => {
-                    if (parseInt(btn.textContent) === currentAnswer) {
-                        btn.classList.add('correct');
-                    }
+                    if (btn.textContent === currentAnswer) btn.classList.add('correct');
                 });
             }
-
             saveProgress();
-            updateProgressGrid();
+            if (activeSkillId === TIMES_TABLES_SKILL) updateProgressGrid(); else updateSkillMasteryDisplay();
         }
 
-        // Handle timeout
         function handleTimeout() {
             answered = true;
-
-            // Disable all buttons
             const allButtons = answersEl.querySelectorAll('.answer-btn');
             allButtons.forEach(btn => btn.disabled = true);
-
             statusEl.textContent = `⏱ Time's up! The answer is ${currentAnswer}`;
             statusEl.className = 'status-message incorrect';
-
-            // Decrease mastery
-            if (mastery[currentQuestion.key] > 0) {
-                mastery[currentQuestion.key]--;
-            }
-
-            // Highlight correct answer
+            if (mastery[currentQuestion.key] > 0) mastery[currentQuestion.key]--;
             allButtons.forEach(btn => {
-                if (parseInt(btn.textContent) === currentAnswer) {
-                    btn.classList.add('correct');
-                }
+                if (btn.textContent === currentAnswer) btn.classList.add('correct');
             });
-
             saveProgress();
             updateProgressGrid();
         }
 
-        // Generate next question
         function nextQuestion() {
             answered = false;
             statusEl.textContent = '';
             statusEl.className = 'status-message';
+            if (activeSkillId === TIMES_TABLES_SKILL) {
+                currentQuestion = selectWeightedQuestion();
+                currentAnswer = (currentQuestion.a * currentQuestion.b).toString();
+                questionEl.textContent = `${currentQuestion.a} × ${currentQuestion.b} = ?`;
+                const allAnswers = shuffle([...generateWrongAnswers(Number(currentAnswer)).map(String), currentAnswer]);
+                renderAnswers(allAnswers);
+                startTimer();
+            } else {
+                const skill = practiceSkills.find(item => item.id === activeSkillId);
+                currentQuestion = skill.generateQuestion();
+                currentAnswer = currentQuestion.correctAnswer;
+                questionEl.textContent = currentQuestion.prompt;
+                renderAnswers(currentQuestion.answers);
+            }
+        }
 
-            // Select question
-            currentQuestion = selectWeightedQuestion();
-            currentAnswer = currentQuestion.a * currentQuestion.b;
-
-            // Display question
-            questionEl.textContent = `${currentQuestion.a} × ${currentQuestion.b} = ?`;
-
-            // Generate answers
-            const wrongAnswers = generateWrongAnswers(currentAnswer);
-            const allAnswers = [...wrongAnswers, currentAnswer];
-
-            // Shuffle answers
-            allAnswers.sort(() => Math.random() - 0.5);
-
-            // Display answer buttons
+        function renderAnswers(allAnswers) {
             answersEl.innerHTML = '';
             allAnswers.forEach(answer => {
                 const button = document.createElement('button');
@@ -739,27 +869,90 @@
                 button.onclick = () => handleAnswer(answer, button);
                 answersEl.appendChild(button);
             });
-
-            // Start timer
-            startTimer();
         }
 
-        // Next button click handler
-        nextBtn.addEventListener('click', nextQuestion);
+        function updateSkillMasteryDisplay() {
+            const percent = skillMastery[activeSkillId] || 0;
+            skillMasteryPercent.textContent = `${percent}%`;
+            skillMasteryBar.style.width = `${percent}%`;
+        }
 
-        // Mode toggle handler
+        function showSkillSelection() {
+            clearInterval(timerInterval);
+            selectionScreen.classList.remove('hidden');
+            gameScreen.classList.add('hidden');
+            skillsBtn.classList.add('hidden');
+            backToTimesBtn.classList.remove('hidden');
+            pageTitle.textContent = 'Skills';
+            activeSkillId = null;
+            renderSkillList();
+        }
+
+        function showTimesTables() {
+            activeSkillId = TIMES_TABLES_SKILL;
+            selectionScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            skillsBtn.classList.remove('hidden');
+            backToTimesBtn.classList.add('hidden');
+            pageTitle.textContent = 'Times Tables Master';
+            modeToggleRow.classList.remove('hidden');
+            timerContainer.classList.remove('hidden');
+            progressGrid.classList.remove('hidden');
+            skillMasteryDisplay.classList.add('hidden');
+            contentWrapper.classList.remove('skill-mode');
+            progressTitle.textContent = 'Your Progress (12×12 Times Tables)';
+            resetBtn.textContent = 'Reset All Progress';
+            questionEl.textContent = 'Click "Next Question" to start!';
+            statusEl.textContent = '';
+            answersEl.innerHTML = '';
+            updateProgressGrid();
+        }
+
+        function startSkill(skillId) {
+            activeSkillId = skillId;
+            const skill = practiceSkills.find(item => item.id === skillId);
+            selectionScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            skillsBtn.classList.remove('hidden');
+            backToTimesBtn.classList.remove('hidden');
+            pageTitle.textContent = skill.name;
+            modeToggleRow.classList.add('hidden');
+            timerContainer.classList.add('hidden');
+            progressGrid.classList.add('hidden');
+            skillMasteryDisplay.classList.remove('hidden');
+            contentWrapper.classList.add('skill-mode');
+            progressTitle.textContent = `${skill.name} Mastery`;
+            resetBtn.textContent = 'Reset This Skill';
+            questionEl.textContent = 'Click "Next Question" to start this skill!';
+            statusEl.textContent = '';
+            answersEl.innerHTML = '';
+            updateSkillMasteryDisplay();
+        }
+
+        function renderSkillList() {
+            skillList.innerHTML = '';
+            practiceSkills.forEach(skill => {
+                const card = document.createElement('button');
+                card.className = 'skill-card';
+                card.innerHTML = `<h2>${skill.name}</h2><p>${skill.description}</p><p><strong>${skillMastery[skill.id] || 0}% mastered</strong></p>`;
+                card.onclick = () => startSkill(skill.id);
+                skillList.appendChild(card);
+            });
+        }
+
+        nextBtn.addEventListener('click', nextQuestion);
         modeToggle.addEventListener('change', function() {
             tieredMode = this.checked;
             saveProgress();
             updateProgressGrid();
         });
-
-        // Reset button click handler
         resetBtn.addEventListener('click', resetProgress);
+        skillsBtn.addEventListener('click', showSkillSelection);
+        backToTimesBtn.addEventListener('click', showTimesTables);
 
-        // Initialize
         loadProgress();
         initProgressGrid();
+        renderSkillList();
     </script>
 </body>
 </html>
