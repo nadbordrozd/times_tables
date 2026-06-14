@@ -879,6 +879,68 @@
             return { prompt, correctAnswer, answers: shuffle([...wrong, correctAnswer]) };
         }
 
+            }
+            return Array.from(wrong);
+        }
+
+        function formatVariableTerm(coefficient, variable) {
+            if (coefficient === 0) return '0';
+            if (coefficient === 1) return variable;
+            if (coefficient === -1) return `-${variable}`;
+            return `${coefficient}${variable}`;
+        }
+
+        function formatExpression(constant, coefficient, variable) {
+            const term = formatVariableTerm(Math.abs(coefficient), variable);
+            if (coefficient >= 0) return `${constant} + ${term}`;
+            return `${constant} - ${term}`;
+        }
+
+        function generateAdditionQuestion() {
+            const a = randomInt(0, 9);
+            const b = randomInt(0, 9);
+            const correct = a + b;
+            const wrong = new Set();
+            while (wrong.size < 5) {
+                const candidate = randomInt(0, 18);
+                if (candidate !== correct) wrong.add(candidate);
+            }
+            return { prompt: `${a} + ${b} = ?`, correctAnswer: correct.toString(), answers: shuffle([...wrong].map(String).concat(correct.toString())) };
+        }
+
+        function generateDistributiveQuestion() {
+            const outside = randomInt(2, 9);
+            const constant = randomInt(1, 9);
+            const variable = ['a', 'b', 'm', 'n', 'p', 'x', 'y', 'z'][randomInt(0, 7)];
+            const innerCoefficient = Math.random() < 0.5 ? 1 : randomInt(2, 9);
+            const sign = Math.random() < 0.5 ? 1 : -1;
+            const variableTerm = formatVariableTerm(innerCoefficient, variable);
+            const operator = sign === 1 ? '+' : '-';
+            const bracket = `(${constant} ${operator} ${variableTerm})`;
+            const prompt = Math.random() < 0.5 ? `${outside}${bracket}` : `${bracket}${outside}`;
+            const correctConstant = outside * constant;
+            const correctCoefficient = outside * innerCoefficient * sign;
+            const correctAnswer = formatExpression(correctConstant, correctCoefficient, variable);
+            const wrong = new Set();
+            const candidates = [
+                formatExpression(correctConstant, innerCoefficient * sign, variable),
+                formatExpression(constant, correctCoefficient, variable),
+                formatExpression(correctConstant + outside, correctCoefficient, variable),
+                formatExpression(correctConstant, -correctCoefficient, variable),
+                formatExpression(outside + constant, (outside + innerCoefficient) * sign, variable),
+                formatExpression(correctConstant - outside, correctCoefficient, variable),
+                formatExpression(correctConstant, correctCoefficient + sign * outside, variable)
+            ];
+            shuffle(candidates).forEach(candidate => {
+                if (candidate !== correctAnswer && wrong.size < 5) wrong.add(candidate);
+            });
+            while (wrong.size < 5) {
+                const candidate = formatExpression(randomInt(1, 81), randomInt(1, 81) * (Math.random() < 0.5 ? 1 : -1), variable);
+                if (candidate !== correctAnswer) wrong.add(candidate);
+            }
+            return { prompt: `${prompt} = ?`, correctAnswer, answers: shuffle([...wrong, correctAnswer]) };
+        }
+
         function startTimer() {
             timeRemaining = 7000;
             const startTime = Date.now();
@@ -997,6 +1059,59 @@
             activeSkillId = null;
             renderSkillList();
         }
+
+        function showTimesTables() {
+            activeSkillId = TIMES_TABLES_SKILL;
+            selectionScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            skillsBtn.classList.remove('hidden');
+            backToTimesBtn.classList.add('hidden');
+            pageTitle.textContent = 'Times Tables Master';
+            modeToggleRow.classList.remove('hidden');
+            timerContainer.classList.remove('hidden');
+            progressGrid.classList.remove('hidden');
+            skillMasteryDisplay.classList.add('hidden');
+            contentWrapper.classList.remove('skill-mode');
+            progressTitle.textContent = 'Your Progress (12×12 Times Tables)';
+            resetBtn.textContent = 'Reset All Progress';
+            questionEl.textContent = 'Click "Next Question" to start!';
+            statusEl.textContent = '';
+            answersEl.innerHTML = '';
+            updateProgressGrid();
+        }
+
+        function startSkill(skillId) {
+            activeSkillId = skillId;
+            const skill = practiceSkills.find(item => item.id === skillId);
+            selectionScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            skillsBtn.classList.remove('hidden');
+            backToTimesBtn.classList.remove('hidden');
+            pageTitle.textContent = skill.name;
+            modeToggleRow.classList.add('hidden');
+            timerContainer.classList.add('hidden');
+            progressGrid.classList.add('hidden');
+            skillMasteryDisplay.classList.remove('hidden');
+            contentWrapper.classList.add('skill-mode');
+            progressTitle.textContent = `${skill.name} Mastery`;
+            resetBtn.textContent = 'Reset This Skill';
+            questionEl.textContent = 'Click "Next Question" to start this skill!';
+            statusEl.textContent = '';
+            answersEl.innerHTML = '';
+            updateSkillMasteryDisplay();
+        }
+
+        function renderSkillList() {
+            skillList.innerHTML = '';
+            practiceSkills.forEach(skill => {
+                const card = document.createElement('button');
+                card.className = 'skill-card';
+                card.innerHTML = `<h2>${skill.name}</h2><p>${skill.description}</p><p><strong>${skillMastery[skill.id] || 0}% mastered</strong></p>`;
+                card.onclick = () => startSkill(skill.id);
+                skillList.appendChild(card);
+            });
+        }
+
 
         function showTimesTables() {
             activeSkillId = TIMES_TABLES_SKILL;
