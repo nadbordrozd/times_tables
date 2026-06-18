@@ -224,7 +224,7 @@ function handleAnswer(selectedAnswer, button) {
             if (mastery[currentQuestion.key] < 5) mastery[currentQuestion.key]++;
         } else {
             const previousMastery = skillMastery[activeSkillId] || 0;
-            skillMastery[activeSkillId] = Math.min(100, skillMastery[activeSkillId] + 10);
+            skillMastery[activeSkillId] = Math.min(100, skillMastery[activeSkillId] + 7);
             if (previousMastery < 100 && skillMastery[activeSkillId] >= 100) {
                 statusEl.textContent = '✓ Mastered! Returning to skills...';
                 showMasterySmiley();
@@ -238,7 +238,7 @@ function handleAnswer(selectedAnswer, button) {
         if (activeSkillId === TIMES_TABLES_SKILL) {
             if (mastery[currentQuestion.key] > 0) mastery[currentQuestion.key]--;
         } else {
-            skillMastery[activeSkillId] = Math.max(0, skillMastery[activeSkillId] - 20);
+            skillMastery[activeSkillId] = Math.max(0, skillMastery[activeSkillId] - 11);
         }
         allButtons.forEach(btn => {
             if (btn.textContent === currentAnswer) btn.classList.add('correct');
@@ -264,12 +264,16 @@ function handleTimeout() {
     allButtons.forEach(btn => btn.disabled = true);
     statusEl.textContent = `⏱ Time's up! The answer is ${currentAnswer}`;
     statusEl.className = 'status-message incorrect';
-    if (mastery[currentQuestion.key] > 0) mastery[currentQuestion.key]--;
+    if (activeSkillId === TIMES_TABLES_SKILL) {
+        if (mastery[currentQuestion.key] > 0) mastery[currentQuestion.key]--;
+    } else {
+        skillMastery[activeSkillId] = Math.max(0, skillMastery[activeSkillId] - 11);
+    }
     allButtons.forEach(btn => {
         if (btn.textContent === currentAnswer) btn.classList.add('correct');
     });
     saveProgress();
-    updateProgressGrid();
+    if (activeSkillId === TIMES_TABLES_SKILL) updateProgressGrid(); else updateSkillMasteryDisplay();
 }
 
 function nextQuestion() {
